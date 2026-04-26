@@ -126,7 +126,7 @@ snakemake --cores 4 --use-conda
 nohup snakemake --cores 4 --use-conda > logs/pipeline.log 2>&1 &
 ```
 # 6. Estructura de outputs
-
+```
 results/
 ├── qc/
 │   └── multiqc_report.html           # Reporte QC integrado de todas las muestras
@@ -142,13 +142,13 @@ results/
 │   ├── annotation/
 │   │   └── {sample}.annotated.vcf.gz # VCF anotado (VEP + ClinVar)
 │   ├── acmg/
-│   │   ├── {sample}.acmg_classified.vcf.gz  # VCF con clasificación ACMG
+│   │   ├── {sample}.acmg_classified.vcf.gz # VCF con clasificación ACMG
 │   │   └── {sample}.acmg_classified.tsv     # Tabla de variantes clasificadas
 │   └── report/
-│       └── {sample}_report.html       # Reporte HTML por muestra
+│       └── {sample}_report.html      # Reporte HTML por muestra
 └── summary/
-    └── all_variants_acmg.tsv          # Tabla resumen de todas las muestras
-
+    └── all_variants_acmg.tsv         # Tabla resumen de todas las muestras
+```
 
 # 7. Interpretar la clasificación ACMG
 
