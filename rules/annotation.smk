@@ -39,7 +39,6 @@ rule vep_annotate:
         species       = config["vep"]["species"],
         assembly      = config["vep"]["assembly"],
         extra         = config["vep"]["extra_flags"],
-        plugins       = " ".join([f"--plugin {p}" for p in config["vep"]["plugins"]]),
     shell:
         """
         vep \
@@ -56,7 +55,6 @@ rule vep_annotate:
             --assembly {params.assembly} \
             --fasta {input.ref} \
             --fork {threads} \
-            {params.plugins} \
             {params.extra} \
             2> {log}
         tabix -p vcf {output.vcf}
