@@ -14,9 +14,9 @@ reference:
 # ── Panel / regiones de interés ──────────────────────────────────────────────
 # El usuario puede reemplazar este BED por el de su panel propio
 panel:
-  bed: config/aml_panel_full.bed        # BED con regiones del panel (chr, start, end, nombre)
+  bed: config/aml_panel_full.bed   # panel completo (todos los exones, recomendado)
+  # bed: config/aml_panel.bed      # alternativa: solo hotspots conocidos (más rápido)
   padding: 10                      # pb de padding alrededor de cada región
-
 # ── Bases de datos de variantes (GATK bundle hg38) ───────────────────────────
 known_sites:
   dbsnp:   resources/dbsnp/Homo_sapiens_assembly38.dbsnp138.vcf.gz
