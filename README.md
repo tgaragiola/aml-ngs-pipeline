@@ -14,7 +14,7 @@ conda install -c conda-forge snakemake
 
 # 1. Clonar el repositorio
 ```bash
-git clone https://github.com/tu-usuario/aml-ngs-pipeline.git
+git clone https://github.com/tgaragiola/aml-ngs-pipeline
 cd aml-ngs-pipeline
 ```
 # 2. Obtener datos de secuenciación
