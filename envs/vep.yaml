@@ -1,0 +1,9 @@
+name: aml_vep
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - ensembl-vep=111.0
+  - htslib=1.19
+  - perl=5.32

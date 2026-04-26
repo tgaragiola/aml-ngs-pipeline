@@ -1,0 +1,22 @@
+# Datos de secuenciación (pesados)
+data/
+
+# Resultados generados por el pipeline
+results/
+
+# Logs
+logs/
+
+# Recursos genómicos (muy pesados, >50GB)
+resources/
+
+# Archivos temporales de Snakemake
+.snakemake/
+
+# Ambientes conda generados
+.conda/
+
+# Archivos del sistema
+.DS_Store
+__pycache__/
+*.pyc

@@ -1,0 +1,67 @@
+# AML Panel - regiones de interés (hg38)
+# Formato: chr  start  end  gen
+# Panel basado en genes recurrentemente mutados en AML (NCCN / ELN 2022)
+# El usuario puede reemplazar este archivo con el BED de su panel propio
+
+# FLT3 - mutaciones puntuales (D835) y ITD en exón 14-15
+chr13	28033987	28034280	FLT3_exon14
+chr13	28034280	28034570	FLT3_exon15
+chr13	28034570	28034860	FLT3_exon20_D835
+
+# NPM1 - exón 12 (inserciones tipo A/B/D)
+chr5	170837418	170837600	NPM1_exon12
+
+# DNMT3A - exón 8-23 (hotspot R882)
+chr2	25234374	25234650	DNMT3A_exon23_R882
+chr2	25240000	25241000	DNMT3A_exon8
+chr2	25241000	25242000	DNMT3A_exon9
+
+# IDH1 - exón 4 (R132)
+chr2	208248389	208248560	IDH1_exon4_R132
+
+# IDH2 - exón 4 (R140, R172)
+chr15	90088606	90088900	IDH2_exon4_R140_R172
+
+# TET2 - exones 3-11
+chr4	105145000	105280000	TET2_exons3_11
+
+# RUNX1 - exones 3-8
+chr21	34787800	34859000	RUNX1_exons3_8
+
+# TP53 - exones 4-10 (dominio de unión a DNA)
+chr17	7673500	7675000	TP53_exons4_5
+chr17	7675000	7676500	TP53_exons6_7
+chr17	7676500	7678000	TP53_exons8_10
+
+# ASXL1 - exón 12
+chr20	32434638	32436000	ASXL1_exon12
+
+# CEBPA - región codificante completa (bZIP + TAD)
+chr19	33790000	33793000	CEBPA_full
+
+# NRAS - exones 2-3 (codones 12, 13, 61)
+chr1	114704000	114716000	NRAS_exons2_3
+
+# KRAS - exones 2-4
+chr12	25205000	25250000	KRAS_exons2_4
+
+# KIT - exones 8, 11, 17
+chr4	54727000	54728000	KIT_exon8
+chr4	54729000	54730500	KIT_exon11
+chr4	54742000	54743000	KIT_exon17
+
+# SF3B1 - exones 13-16 (hotspot K700)
+chr2	197401000	197410000	SF3B1_exons13_16
+
+# SRSF2 - exón 1 (P95)
+chr17	76735000	76737000	SRSF2_exon1_P95
+
+# U2AF1 - exones 2, 6
+chr21	43092000	43094000	U2AF1_exon2
+chr21	43099000	43101000	U2AF1_exon6
+
+# EZH2 - exones 14-20
+chr7	148807000	148870000	EZH2_exons14_20
+
+# STAG2 - exones 7-35
+chrX	123115000	123238000	STAG2_exons7_35

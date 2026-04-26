@@ -1,0 +1,9 @@
+name: aml_align
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - bwa
+  - samtools
+  - htslib

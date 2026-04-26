@@ -1,0 +1,8 @@
+name: aml_bcftools
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - bcftools=1.19
+  - htslib=1.19

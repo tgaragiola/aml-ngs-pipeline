@@ -1,0 +1,4 @@
+sample	fastq_r1	fastq_r2
+CBF_AML_008	data/CBF_AML_008_R1.fastq.gz	data/CBF_AML_008_R2.fastq.gz
+CBF_AML_009	data/CBF_AML_009_R1.fastq.gz	data/CBF_AML_009_R2.fastq.gz
+CBF_AML_010	data/CBF_AML_010_R1.fastq.gz	data/CBF_AML_010_R2.fastq.gz

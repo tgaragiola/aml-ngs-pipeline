@@ -1,0 +1,12 @@
+yamlname: aml_python
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pandas=2.2
+  - pysam=0.22
+  - bcftools
+  - htslib
+  - pip

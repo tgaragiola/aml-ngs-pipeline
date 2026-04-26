@@ -1,0 +1,56 @@
+# =============================================================================
+# Perfil Snakemake para AWS
+# Ubicación: ~/.config/snakemake/aws/config.yaml
+# Uso: snakemake --profile aws
+# =============================================================================
+
+# Ejecutor: usa snakemake-executor-plugin-cluster-generic
+# para enviar jobs a instancias EC2 spot vía AWS Batch
+
+executor: cluster-generic
+
+# Número máximo de jobs simultáneos
+jobs: 50
+
+# Reintentos automáticos ante falla (útil con instancias spot)
+retries: 2
+
+# Usar conda para gestionar entornos
+use-conda: true
+conda-frontend: mamba
+
+# Mantener archivos temporales en fallo (para debug)
+keep-incomplete: false
+
+# Latency para filesystems distribuidos (S3/EFS)
+latency-wait: 60
+
+# Recursos por defecto
+default-resources:
+  mem_mb: 8000
+  threads: 4
+  disk_mb: 50000
+
+# Configuración de cluster (AWS Batch o SLURM en EC2)
+cluster-generic-submit-cmd: >
+  sbatch
+  --mem={resources.mem_mb}
+  --cpus-per-task={threads}
+  --time=04:00:00
+  --output=logs/slurm/{rule}_{wildcards}.out
+  --error=logs/slurm/{rule}_{wildcards}.err
+
+cluster-generic-status-cmd: squeue -j {jobid} -h -o "%T"
+cluster-generic-cancel-cmd: scancel {jobid}
+
+# Grupos de recursos para reglas pesadas
+set-resources:
+  bwa_mem2:
+    mem_mb: 32000
+    threads: 16
+  mutect2_tumor_only:
+    mem_mb: 16000
+    threads: 8
+  vep_annotate:
+    mem_mb: 8000
+    threads: 8

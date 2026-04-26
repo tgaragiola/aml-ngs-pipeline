@@ -1,0 +1,10 @@
+name: aml_gatk
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - gatk4=4.5.0.0
+  - samtools=1.19
+  - bcftools=1.19
+  - htslib=1.19
