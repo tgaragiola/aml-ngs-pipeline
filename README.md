@@ -52,52 +52,28 @@ MI_MUESTRA    data/MI_MUESTRA_R1.fastq.gz data/MI_MUESTRA_R2.fastq.gz
 
 # 3. Descargar recursos genómicos
 
+La forma más simple es ejecutar el script incluido, que descarga los datos de SRA y todos los recursos, y puede volver a ejecutarse si se interrumpe (saltea lo ya descargado):
+
 ```bash
-mkdir -p resources/{hg38,dbsnp,known_indels,pon,vep_cache,clinvar}
-
-# Genoma de referencia hg38
-cd resources/hg38
-wget https://storage.googleapis.com/genomics-public-data/resources/broad/hg38/v0/Homo_sapiens_assembly38.fasta
-wget https://storage.googleapis.com/genomics-public-data/resources/broad/hg38/v0/Homo_sapiens_assembly38.fasta.fai
-wget https://storage.googleapis.com/genomics-public-data/resources/broad/hg38/v0/Homo_sapiens_assembly38.dict
-
-# Indexar para BWA
-bwa index Homo_sapiens_assembly38.fasta
-ln -s Homo_sapiens_assembly38.fasta hg38.fa
-ln -s Homo_sapiens_assembly38.fasta.fai hg38.fa.fai
-ln -s Homo_sapiens_assembly38.dict hg38.dict
-cd ../..
-
-# GATK bundle (variantes conocidas para BQSR)
-BASE="https://storage.googleapis.com/genomics-public-data/resources/broad/hg38/v0"
-wget -P resources/dbsnp/        $BASE/Homo_sapiens_assembly38.dbsnp138.vcf.gz
-wget -P resources/dbsnp/        $BASE/Homo_sapiens_assembly38.dbsnp138.vcf.gz.tbi
-wget -P resources/known_indels/ $BASE/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz
-wget -P resources/known_indels/ $BASE/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz.tbi
-wget -P resources/known_indels/ $BASE/1000G_phase1.snps.high_confidence.hg38.vcf.gz
-wget -P resources/known_indels/ $BASE/1000G_phase1.snps.high_confidence.hg38.vcf.gz.tbi
-
-# Panel of Normals y gnomAD (GATK best practices)
-GATK_BASE="https://storage.googleapis.com/gatk-best-practices/somatic-hg38"
-wget -P resources/pon/ $GATK_BASE/1000g_pon.hg38.vcf.gz
-wget -P resources/pon/ $GATK_BASE/1000g_pon.hg38.vcf.gz.tbi
-wget -P resources/     $GATK_BASE/af-only-gnomad.hg38.vcf.gz
-wget -P resources/     $GATK_BASE/af-only-gnomad.hg38.vcf.gz.tbi
-
-# ClinVar
-wget -P resources/clinvar/ https://ftp.ncbi.nlm.nih.gov/pub/clinvar/vcf_GRCh38/clinvar.vcf.gz
-wget -P resources/clinvar/ https://ftp.ncbi.nlm.nih.gov/pub/clinvar/vcf_GRCh38/clinvar.vcf.gz.tbi
-
-# VEP cache (puede tardar ~1h, ocupa ~15GB)
-vep_install \
-  --AUTO cf \
-  --SPECIES homo_sapiens \
-  --ASSEMBLY GRCh38 \
-  --CACHEDIR resources/vep_cache \
-  --VERSION 111 \
-  --NO_HTSLIB 0
+mamba install -c conda-forge -c bioconda sra-tools bwa samtools bcftools htslib pigz
+bash descargar_recursos.sh 2>&1 | tee descargas.log
 ```
 
+El script realiza los siguientes pasos (espacio necesario: ~100 GB):
+
+- Descarga las tres muestras de SRA y las renombra al formato del pipeline.
+- Descarga el genoma de referencia hg38 y los recursos de GATK desde el repositorio público del Broad Institute (`gcp-public-data--broad-references`; el repositorio anterior, `genomics-public-data`, ya no permite el acceso libre) y genera el índice de BWA.
+- Descarga el Panel of Normals y gnomAD (`gatk-best-practices/somatic-hg38`).
+- Descarga ClinVar y **renombra los cromosomas** (`1` → `chr1`, `MT` → `chrM`) para que coincidan con el genoma de referencia. Sin este paso, la anotación con ClinVar no encuentra ninguna variante y no emite errores.
+
+La caché de VEP (~25 GB) se descarga por separado; con `wget -c` la descarga puede retomarse si se corta:
+
+```bash
+mkdir -p resources/vep_cache && cd resources/vep_cache
+wget -c https://ftp.ensembl.org/pub/release-111/variation/indexed_vep_cache/homo_sapiens_vep_111_GRCh38.tar.gz
+tar -xzf homo_sapiens_vep_111_GRCh38.tar.gz && rm homo_sapiens_vep_111_GRCh38.tar.gz
+cd ../..
+```
 
 # 4. Configurar el pipeline
 
@@ -113,6 +89,10 @@ cp /ruta/a/mi_panel.bed config/aml_panel.bed
 
 ```
 ## El pipeline incluye por defecto un panel de 23 genes de relevancia clínica en LMA según las guías ELN 2022 (config/aml_panel_full.bed). Pero se puede utilizar cualquier otro archivo BED con las regiones de interés deseadas.
+
+## Notas de versión
+
+- **Noviembre 2026:** se corrigió el script `scripts/acmg_classifier.py`. (1) Los campos de la anotación de VEP se leían según una lista fija que no coincidía con el orden real; ahora el orden se lee desde el encabezado del VCF. Con la versión anterior, la frecuencia de gnomAD y la puntuación CADD se leían de columnas equivocadas y las variantes de cambio de sentido se clasificaban erróneamente como benignas. (2) Los campos de ClinVar con comas (p. ej. `CLNREVSTAT`) se leían como tuplas y el número de estrellas resultaba siempre 0. (3) El criterio BP4 ya no se aplica cuando no hay predicción CADD disponible.
 
 # 5. Ejecución
 ```bash

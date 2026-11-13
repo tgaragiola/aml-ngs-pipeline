@@ -180,32 +180,40 @@ SYNONYMOUS_CONSEQUENCES = {
 # Parser de info VEP en el VCF
 # =============================================================================
 
-def parse_vep_info(info_dict: dict, vep_field: str = "CSQ") -> dict:
-    """Extrae el primer transcript canónico de la anotación VEP."""
+def get_csq_keys(header) -> list:
+    """
+    Lee el orden real de los campos CSQ desde el header del VCF anotado por VEP.
+    VEP lo declara como: ##INFO=<ID=CSQ,...,Description="... Format: Allele|Consequence|...">
+    CORRECCIÓN (nov. 2026): antes se usaba una lista fija de campos que no
+    coincidía con el orden de VEP, lo que asignaba valores a campos equivocados
+    (p. ej., la posición en el ADNc se leía como frecuencia de gnomAD).
+    """
+    if "CSQ" not in header.info:
+        return []
+    desc = header.info["CSQ"].description
+    if "Format:" not in desc:
+        return []
+    return desc.split("Format:")[1].strip().strip('"').strip().split("|")
+
+
+def parse_vep_info(info_dict: dict, csq_keys: list, vep_field: str = "CSQ") -> dict:
+    """Extrae la anotación VEP del transcrito canónico usando el orden real de campos."""
     csq_raw = info_dict.get(vep_field, "")
     if isinstance(csq_raw, tuple):
         csq_raw = ",".join(csq_raw)
-    if not csq_raw:
+    if not csq_raw or not csq_keys:
         return {}
 
-    # Header CSQ: Allele|Consequence|IMPACT|SYMBOL|Gene|...
-    vep_keys = [
-        "Allele", "Consequence", "IMPACT", "SYMBOL", "Gene",
-        "Feature", "BIOTYPE", "HGVSc", "HGVSp",
-        "Existing_variation", "AF", "gnomADe_AF", "gnomADg_AF",
-        "CADD_PHRED", "SpliceAI_pred_DS_AG", "CANONICAL",
-        "SIFT", "PolyPhen", "DOMAINS",
-    ]
-
     transcripts = csq_raw.split(",")
+    parsed = []
     for t in transcripts:
         fields = t.split("|")
-        d = dict(zip(vep_keys, fields + [""] * max(0, len(vep_keys) - len(fields))))
+        d = dict(zip(csq_keys, fields + [""] * max(0, len(csq_keys) - len(fields))))
+        parsed.append(d)
         if d.get("CANONICAL") == "YES":
             return d
     # Si no hay canónico, tomar el primero
-    fields = transcripts[0].split("|")
-    return dict(zip(vep_keys, fields + [""] * max(0, len(vep_keys) - len(fields))))
+    return parsed[0]
 
 
 def safe_float(val: str, default: float = 0.0) -> float:
@@ -215,6 +223,19 @@ def safe_float(val: str, default: float = 0.0) -> float:
         return default
 
 
+def info_str(value) -> str:
+    """
+    CORRECCIÓN (nov. 2026): pysam devuelve los campos INFO de ClinVar que
+    contienen comas (p. ej. CLNREVSTAT) como tuplas. Sin unirlos, el texto
+    quedaba como "('criteria_provided', ...)" y las estrellas siempre eran 0.
+    """
+    if value is None:
+        return "."
+    if isinstance(value, (tuple, list)):
+        return ",".join(str(v) for v in value)
+    return str(value)
+
+
 def get_clinvar_stars(revstat: str) -> int:
     """Convierte CLNREVSTAT de ClinVar a número de estrellas."""
     star_map = {
@@ -222,6 +243,7 @@ def get_clinvar_stars(revstat: str) -> int:
         "reviewed_by_expert_panel": 3,
         "criteria_provided,_multiple_submitters,_no_conflicts": 2,
         "criteria_provided,_conflicting_interpretations": 1,
+        "criteria_provided,_conflicting_classifications": 1,
         "criteria_provided,_single_submitter": 1,
         "no_assertion_criteria_provided": 0,
         "no_assertion_provided": 0,
@@ -330,7 +352,10 @@ class ACMGClassifier:
         # (NO aplica en AML donde missense también es mecanismo)
 
         # BP4: Predicciones computacionales benignas
-        if cadd < 10 and splice_ai < 0.05:
+        # CORRECCIÓN (nov. 2026): solo se aplica si hay predicción CADD disponible
+        # (cadd > 0). Sin el plugin de CADD en VEP el valor es 0 y no debe
+        # interpretarse como evidencia benigna.
+        if 0 < cadd < 10 and splice_ai < 0.05:
             ev.BP4 = True
 
         # BP6: Reportado como benigno por fuente confiable
@@ -424,6 +449,9 @@ def process_vcf(
 
     vcf_out = pysam.VariantFile(output_vcf + ".tmp.vcf", "w", header=vcf_in.header)
     tsv_rows = []
+    csq_keys = get_csq_keys(vcf_in.header)
+    if not csq_keys:
+        sys.exit("ERROR: el VCF no tiene un campo CSQ de VEP con 'Format:' en el header.")
 
     tsv_header = [
         "sample","chrom","pos","ref","alt","gene","consequence",
@@ -435,7 +463,7 @@ def process_vcf(
 
     for rec in vcf_in.fetch():
         info = dict(rec.info)
-        vep  = parse_vep_info(info)
+        vep  = parse_vep_info(info, csq_keys)
 
         # Extraer VAF y profundidad del formato de muestra
         try:
@@ -447,7 +475,7 @@ def process_vcf(
         except Exception:
             af, dp, alt_reads = 0.0, 0, 0
 
-        gnomad_af = safe_float(vep.get("gnomADg_AF") or vep.get("gnomADe_AF"))
+        gnomad_af = safe_float(vep.get("gnomADe_AF") or vep.get("gnomADg_AF") or vep.get("MAX_AF"))
 
         v = ClassifiedVariant(
             sample      = sample_name,
@@ -463,8 +491,8 @@ def process_vcf(
             depth       = dp,
             alt_reads   = alt_reads,
             gnomad_af   = gnomad_af,
-            clinvar_sig = str(info.get("CLNSIG", ".")),
-            clinvar_stars = get_clinvar_stars(str(info.get("CLNREVSTAT", ""))),
+            clinvar_sig = info_str(info.get("CLNSIG", ".")),
+            clinvar_stars = get_clinvar_stars(info_str(info.get("CLNREVSTAT", ""))),
             cadd_phred  = safe_float(vep.get("CADD_PHRED")),
             splice_ai   = safe_float(vep.get("SpliceAI_pred_DS_AG")),
         )
